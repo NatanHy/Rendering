@@ -5,15 +5,29 @@ use glutin::event_loop::{EventLoop, ControlFlow};
 use glutin::window::WindowBuilder;
 use glutin::ContextBuilder;
 use glutin::event::{Event, WindowEvent};
-use std::ffi::CString;
-
-use std::fs;
+use triangles::{Triangle, TriangleMesh};
 use std::time::{Duration, Instant};
 
 mod set_uniform;
 mod opengl_handler;
+mod triangles;
 
 use opengl_handler::OpenGLHandler;
+
+fn init_triangles() -> TriangleMesh {
+    let tri = Triangle::new(
+        [0., 1., -0.3],
+        [1., 0., 0.],
+
+        [-1., -1., -0.2],
+        [0., 1., 0.],
+
+        [1., -1., -0.5],
+        [0., 0., 1.],
+    );
+
+    TriangleMesh::new(vec![tri])
+}
 
 fn main() {
     // Define the size of the viewport (width and height in pixels)
@@ -29,9 +43,9 @@ fn main() {
     let context = unsafe { context.make_current().unwrap() };
     gl::load_with(|symbol| context.get_proc_address(symbol) as *const _);
 
-    let opengl_handler = OpenGLHandler::new();
+    let mut opengl_handler = OpenGLHandler::new();
     opengl_handler.init_shaders();
-    opengl_handler.init_buffers();
+    opengl_handler.init_buffers(Some(&init_triangles()));
 
     //Set uinform values
     event_loop.run(move |event, _, control_flow| {
@@ -51,15 +65,7 @@ fn main() {
             Event::MainEventsCleared => {
                 let start = Instant::now();
 
-                // Clear the color buffer
-                unsafe { 
-                    gl::Clear(gl::COLOR_BUFFER_BIT);
-                    gl::Clear(gl::DEPTH_BUFFER_BIT);
-                    // Draw the triangle
-                    gl::DrawElements(gl::TRIANGLES, 3, gl::UNSIGNED_SHORT, std::ptr::null());
-                }
-
-                // Swap buffers if using double buffering
+                opengl_handler.draw();
                 context.swap_buffers().unwrap();
 
                 let dur = Instant::elapsed(&start);

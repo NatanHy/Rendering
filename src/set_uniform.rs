@@ -6,7 +6,8 @@ pub enum UniformType {
     FLOAT(f32),
     VEC2([f32;2]),   
     VEC3([f32;3]),
-    VEC4([f32;4])
+    VEC4([f32;4]),
+    MAT4(glm::Matrix4<f32>)
 }
 
 pub fn set_uniform(shader_program : GLuint, uniform_name : &str, uniform_value : UniformType) {
@@ -24,6 +25,7 @@ pub fn set_uniform(shader_program : GLuint, uniform_name : &str, uniform_value :
                 UniformType::VEC4(x) => gl::Uniform4f(uniform_location, x[0], x[1], x[2], x[3]),
                 UniformType::FLOAT(x) => gl::Uniform1f(uniform_location, x),
                 UniformType::INT(x) => gl::Uniform1i(uniform_location, x),
+                UniformType::MAT4(x) => gl::UniformMatrix4fv(uniform_location, 1, gl::FALSE, &x.as_array()[0][0]),
             }
             
         }
