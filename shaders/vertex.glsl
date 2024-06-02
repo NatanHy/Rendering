@@ -5,13 +5,11 @@ layout (location = 1) in vec3 color;
 
 out vec3 vertexColor;
 
-uniform mat4 modelTransformMatrix;
-uniform mat4 projectionMatrix;
+uniform mat4 transformMatrix;
 
 void main() {
     vec4 v = vec4(position, 1.0);
-    v = modelTransformMatrix * v;
-    v = projectionMatrix * v;
+    v = transformMatrix * v;
     gl_Position = v;
     vertexColor = color;
 }

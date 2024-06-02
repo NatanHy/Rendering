@@ -1,17 +1,7 @@
 use std::{ffi::CString, fs};
 use crate::triangles::TriangleMesh;
-use glm::{self, GenMat};
+use glm::{self, ext::{perspective, pi}, GenMat, Vector3};
 use crate::set_uniform::{set_uniform, UniformType};
-
-fn persective_mat(fov : f32, aspect : f32, near : f32, far : f32) -> glm::Matrix4<f32> {
-    let fov_tan = (fov / 2.).tan();
-    glm::mat4(
-        1. / (aspect * fov_tan), 0., 0., 0., 
-        0., 1. / fov_tan, 0., 0., 
-        0., 0., -(far + near) / (far - near), -(2. * far * near) / (far - near), 
-        0., 0., -1., 0.)
-        .transpose()
-}
 
 struct GlBuffer {
     id : u32,
@@ -49,7 +39,8 @@ impl GlBuffer {
 pub struct OpenGLHandler {
     shader_program : u32,
     vbo : Option<GlBuffer>,
-    ebo : Option<GlBuffer>
+    ebo : Option<GlBuffer>,
+    num_triangles : u32,
 }
 
 impl OpenGLHandler {
@@ -58,6 +49,7 @@ impl OpenGLHandler {
             shader_program : 0,
             vbo : None,
             ebo : None,
+            num_triangles : 0,
         }
     }
 
@@ -113,9 +105,11 @@ impl OpenGLHandler {
         let mut ebo = GlBuffer::new(1, gl::ELEMENT_ARRAY_BUFFER, 0);
 
         if let Some(tri_mesh) = triangle_mesh {
-            vbo.set_data(&tri_mesh.verticies(), gl::STATIC_DRAW);
-            ebo.set_data(&tri_mesh.indicies(), gl::STATIC_DRAW);
+            vbo.set_data(&tri_mesh.verticies, gl::STATIC_DRAW);
+            ebo.set_data(&tri_mesh.indicies, gl::STATIC_DRAW);
+            self.num_triangles = tri_mesh.indicies.len() as u32;
         }
+
 
         self.vbo = Some(vbo);
         self.ebo = Some(ebo);
@@ -131,22 +125,41 @@ impl OpenGLHandler {
         unsafe {gl::Enable(gl::DEPTH_TEST)};
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&self, t : f32) {
         // Clear the color buffer
+
         unsafe { 
             gl::Clear(gl::COLOR_BUFFER_BIT);
             gl::Clear(gl::DEPTH_BUFFER_BIT);
 
-            let identity_mat = glm::mat4(1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1.);
+            let rotation_mat = glm::mat4(
+                t.cos(),  0., t.sin(), 0., 
+                0.,       1., 0.,      0., 
+                -t.sin(), 0., t.cos(), 0., 
+                0.,       0., 0.,      1.
+            );
 
-            let model_transform_mat = glm::ext::translate(&identity_mat, glm::vec3(0., 0., 0.));
-            let projection_mat = persective_mat(60., 16. / 9., 0.1, 10.);
+            let identity_mat = glm::mat4(
+                1., 0., 0., 0., 
+                0., 1., 0., 0., 
+                0., 0., 1., 0., 
+                0., 0., 0., 1.
+            );
 
-            set_uniform(self.shader_program, "modelTransformMatrix", UniformType::MAT4(model_transform_mat));
-            set_uniform(self.shader_program, "projectionMatrix", UniformType::MAT4(projection_mat));
+            // let projection_mat = glm::mat4(
+            //     1.12, 0., 0., 0., 
+            //     0., 1.79, 0., 0., 
+            //     0., 0., -1., -1., 
+            //     0., 0., 0., 0.
+            // );
+
+            let mut transform_mat = glm::ext::perspective(60.0, 1.0, 0.1, 0.5);
+            transform_mat = glm::ext::translate(&transform_mat, Vector3::new(t.cos() * 0.3, t.sin() * 0.3, -0.3));
+
+            set_uniform(self.shader_program, "transformMatrix", UniformType::MAT4(transform_mat));
         
             // Draw the triangle
-            gl::DrawElements(gl::TRIANGLES, 3, gl::UNSIGNED_SHORT, std::ptr::null());
+            gl::DrawElements(gl::TRIANGLES, self.num_triangles as i32, gl::UNSIGNED_SHORT, std::ptr::null());
         }
     }
     

@@ -15,18 +15,48 @@ mod triangles;
 use opengl_handler::OpenGLHandler;
 
 fn init_triangles() -> TriangleMesh {
-    let tri = Triangle::new(
-        [0., 1., -0.3],
-        [1., 0., 0.],
+    let verts = vec![
+        -0.2, 0.2, 0.2,
+         1.0, 0.0, 0.0,
 
-        [-1., -1., -0.2],
-        [0., 1., 0.],
+         0.2, 0.2, 0.2,
+        0.0, 1.0, 0.0,
 
-        [1., -1., -0.5],
-        [0., 0., 1.],
-    );
+        -0.2, -0.2, 0.2,
+        1.0, 1.0, 0.0,
 
-    TriangleMesh::new(vec![tri])
+         0.2, -0.2, 0.2,
+        0.0, 0.0, 1.0,
+
+        -0.2, 0.2, -0.2,
+         1.0, 0.0, 1.0,
+
+         0.2, 0.2, -0.2,
+        0.0, 1.0, 1.0,
+
+        -0.2, -0.2, -0.2,
+        1.0, 1.0, 1.0,
+
+         0.2, -0.2, -0.2,
+        0.0, 0.0, 1.0,
+    ];
+
+    let indicies = vec![
+        2, 1, 0,
+        2, 3, 1,
+        0, 5, 4,
+        0, 1, 5,
+        3, 5, 1,
+        3, 7, 5,
+        0, 4, 2,
+        2, 4, 6,
+        2, 6, 3,
+        3, 6, 7,
+        4, 5, 6,
+        7, 6, 5,
+    ];
+
+    TriangleMesh::from_array_indicies(verts, indicies)
 }
 
 fn main() {
@@ -47,9 +77,10 @@ fn main() {
     opengl_handler.init_shaders();
     opengl_handler.init_buffers(Some(&init_triangles()));
 
-    //Set uinform values
+    let mut t : f32 = 0.0;
+
     event_loop.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Wait;
+        *control_flow = ControlFlow::Poll;
 
         match event {
             Event::WindowEvent { event, .. } => match event {
@@ -65,11 +96,13 @@ fn main() {
             Event::MainEventsCleared => {
                 let start = Instant::now();
 
-                opengl_handler.draw();
+                opengl_handler.draw(t);
                 context.swap_buffers().unwrap();
 
                 let dur = Instant::elapsed(&start);
                 let fps = 1.0 / dur.as_secs_f64();
+
+                t += 1.0 / fps as f32;
 
                 context.window().set_title(&format!("FPS: {}", fps.round()));
             }

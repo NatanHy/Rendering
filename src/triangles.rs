@@ -17,46 +17,32 @@ impl Triangle {
 }
 
 pub struct TriangleMesh {
-    triangles : Vec<Triangle>
+    triangles : Vec<Triangle>,
+    pub verticies : Vec<f32>,
+    pub indicies : Vec<u16>
 }
 
 impl TriangleMesh {
     pub fn new(triangles : Vec<Triangle>) -> Self {
-        TriangleMesh { triangles }
-    }
-
-    pub fn from_array_indicies(array : Vec<f32>, indicies : Vec<u16>) -> Self {
-        let num_tris = indicies.len() / 3;
-
-        for i in 0..num_tris {
-            let i1 = indicies[3 * i] as usize;
-            let i2 = indicies[3 * i + 1] as usize;
-            let i3 = indicies[3 * i + 2] as usize;
-        }
-
-        todo!()
-    }
-
-    pub fn verticies(&self) -> Vec<f32> {
         let mut verts = Vec::new();
+        let mut elms = Vec::with_capacity(3 * triangles.len());
 
-        for tri in &self.triangles {
+        for tri in &triangles {
             for i in 0..3 {
                 verts.extend(tri.verticies[i]);
                 verts.extend(tri.colors[i]);
             }
         }
 
-        verts
-    }
 
-    pub fn indicies(&self) -> Vec<u16> {
-        let mut elms = Vec::with_capacity(3 * self.triangles.len());
-
-        for i in 0..3 * self.triangles.len() {
+        for i in 0..3 * triangles.len() {
             elms.push(i as u16);
         }
 
-        elms
+        TriangleMesh { triangles , verticies : verts, indicies : elms}
+    }
+
+    pub fn from_array_indicies(verticies : Vec<f32>, indicies : Vec<u16>) -> Self {
+        TriangleMesh {triangles : Vec::new(), verticies, indicies}
     }
 }
