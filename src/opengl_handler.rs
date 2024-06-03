@@ -1,7 +1,8 @@
 use std::{ffi::CString, fs};
 use crate::triangles::TriangleMesh;
-use glm::{self, ext::{perspective, pi}, GenMat, Vector3};
+use glm::{self, Vector3};
 use crate::set_uniform::{set_uniform, UniformType};
+use crate::texture::Texture;
 
 struct GlBuffer {
     id : u32,
@@ -106,62 +107,41 @@ impl OpenGLHandler {
 
         if let Some(tri_mesh) = triangle_mesh {
             vbo.set_data(&tri_mesh.verticies, gl::STATIC_DRAW);
-            ebo.set_data(&tri_mesh.indicies, gl::STATIC_DRAW);
-            self.num_indicies = tri_mesh.indicies.len() as u32;
+            ebo.set_data(&tri_mesh.vertex_indicies, gl::STATIC_DRAW);
+            tri_mesh.enable_vertex_attributes();
+            self.num_indicies = tri_mesh.vertex_indicies.len() as u32;
         }
-
 
         self.vbo = Some(vbo);
         self.ebo = Some(ebo);
-        
-        // Specify vertex attribute pointers
-        unsafe {
-            gl::EnableVertexAttribArray(0);
-            gl::EnableVertexAttribArray(1);
-            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 6 * std::mem::size_of::<f32>() as i32, std::ptr::null());
-            gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 6 * std::mem::size_of::<f32>() as i32, (3 * std::mem::size_of::<f32>()) as *mut std::os::raw::c_void);
-        }
 
         unsafe {gl::Enable(gl::DEPTH_TEST)};
     }
 
-    pub fn draw(&self, t : f32) {
-        // Clear the color buffer
+    pub fn init_textures(&self) {
+        Texture::load("converted/textures/test.png")
+    }
 
+    pub fn draw(&self, t : f32) {
         unsafe { 
             gl::Clear(gl::COLOR_BUFFER_BIT);
             gl::Clear(gl::DEPTH_BUFFER_BIT);
-
-            let rotation_mat = glm::mat4(
-                t.cos(),  0., t.sin(), 0., 
-                0.,       1., 0.,      0., 
-                -t.sin(), 0., t.cos(), 0., 
-                0.,       0., 0.,      1.
-            );
 
             let identity_mat = glm::mat4(
                 1., 0., 0., 0., 
                 0., 1., 0., 0., 
                 0., 0., 1., 0., 
-                0., 0., 0., 1.
-            );
-
-            // let projection_mat = glm::mat4(
-            //     1.12, 0., 0., 0., 
-            //     0., 1.79, 0., 0., 
-            //     0., 0., -1., -1., 
-            //     0., 0., 0., 0.
-            // );
+                0., 0., 0., 1.);
 
             let mut transform_mat = glm::ext::perspective(3.1416 / 3., 1.0, 0.1, 10.5);
-            transform_mat = glm::ext::translate(&transform_mat, Vector3::new(0.0, -0.3, -1.5));
-            transform_mat = glm::ext::scale(&transform_mat, Vector3::new(0.1, 0.1, 0.1));
-            transform_mat = glm::ext::rotate(&transform_mat, -3.14 / 2., Vector3::new(1., 0., 0.));
-            transform_mat = glm::ext::rotate(&transform_mat, t, Vector3::new(0., 0., 1.));
+            transform_mat = glm::ext::translate(&transform_mat, Vector3::new(0., -1.0, -4.0));
+            transform_mat = glm::ext::scale(&transform_mat, Vector3::new(1., 1., 1.));
+            // transform_mat = glm::ext::rotate(&transform_mat, -0.2, Vector3::new(1., 0., 0.));
+            transform_mat = glm::ext::rotate(&transform_mat, t, Vector3::new(0., 1., 0.));
 
             set_uniform(self.shader_program, "transformMatrix", UniformType::MAT4(transform_mat));
+            set_uniform(self.shader_program, "texture0", UniformType::INT(0));
         
-            // Draw the triangle
             gl::DrawElements(gl::TRIANGLES, self.num_indicies as i32, gl::UNSIGNED_SHORT, std::ptr::null());
         }
     }

@@ -5,61 +5,17 @@ use glutin::event_loop::{EventLoop, ControlFlow};
 use glutin::window::WindowBuilder;
 use glutin::ContextBuilder;
 use glutin::event::{Event, WindowEvent};
-use triangles::{Triangle, TriangleMesh};
+use triangles::TriangleMesh;
 use std::time::{Duration, Instant};
 
 mod set_uniform;
 mod opengl_handler;
 mod triangles;
 mod obj_parser;
+mod texture;
 
 use obj_parser::obj_to_mesh;
 use opengl_handler::OpenGLHandler;
-
-fn init_triangles() -> TriangleMesh {
-    let verts = vec![
-        -0.2, 0.2, 0.2,
-         1.0, 0.0, 0.0,
-
-         0.2, 0.2, 0.2,
-        0.0, 1.0, 0.0,
-
-        -0.2, -0.2, 0.2,
-        1.0, 1.0, 0.0,
-
-         0.2, -0.2, 0.2,
-        0.0, 0.0, 1.0,
-
-        -0.2, 0.2, -0.2,
-         1.0, 0.0, 1.0,
-
-         0.2, 0.2, -0.2,
-        0.0, 1.0, 1.0,
-
-        -0.2, -0.2, -0.2,
-        1.0, 1.0, 1.0,
-
-         0.2, -0.2, -0.2,
-        0.0, 0.0, 1.0,
-    ];
-
-    let indicies = vec![
-        2, 1, 0,
-        2, 3, 1,
-        0, 5, 4,
-        0, 1, 5,
-        3, 5, 1,
-        3, 7, 5,
-        0, 4, 2,
-        2, 4, 6,
-        2, 6, 3,
-        3, 6, 7,
-        4, 5, 6,
-        7, 6, 5,
-    ];
-
-    TriangleMesh::from_array_indicies(verts, indicies)
-}
 
 fn main() {
     // Define the size of the viewport (width and height in pixels)
@@ -77,7 +33,9 @@ fn main() {
 
     let mut opengl_handler = OpenGLHandler::new();
     opengl_handler.init_shaders();
-    opengl_handler.init_buffers(Some(&obj_to_mesh("objects/fox_full.obj")));
+    // opengl_handler.init_buffers(Some(&obj_to_mesh("objects/Scaniverse.obj")));
+    opengl_handler.init_buffers(Some(&obj_to_mesh("converted/objects/audi.obj")));
+    opengl_handler.init_textures();
 
     let mut t : f32 = 0.0;
 
