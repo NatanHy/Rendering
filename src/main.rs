@@ -11,7 +11,9 @@ use std::time::{Duration, Instant};
 mod set_uniform;
 mod opengl_handler;
 mod triangles;
+mod obj_parser;
 
+use obj_parser::obj_to_mesh;
 use opengl_handler::OpenGLHandler;
 
 fn init_triangles() -> TriangleMesh {
@@ -75,7 +77,7 @@ fn main() {
 
     let mut opengl_handler = OpenGLHandler::new();
     opengl_handler.init_shaders();
-    opengl_handler.init_buffers(Some(&init_triangles()));
+    opengl_handler.init_buffers(Some(&obj_to_mesh("objects/fox_full.obj")));
 
     let mut t : f32 = 0.0;
 

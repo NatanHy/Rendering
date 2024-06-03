@@ -40,7 +40,7 @@ pub struct OpenGLHandler {
     shader_program : u32,
     vbo : Option<GlBuffer>,
     ebo : Option<GlBuffer>,
-    num_triangles : u32,
+    num_indicies : u32,
 }
 
 impl OpenGLHandler {
@@ -49,7 +49,7 @@ impl OpenGLHandler {
             shader_program : 0,
             vbo : None,
             ebo : None,
-            num_triangles : 0,
+            num_indicies : 0,
         }
     }
 
@@ -107,7 +107,7 @@ impl OpenGLHandler {
         if let Some(tri_mesh) = triangle_mesh {
             vbo.set_data(&tri_mesh.verticies, gl::STATIC_DRAW);
             ebo.set_data(&tri_mesh.indicies, gl::STATIC_DRAW);
-            self.num_triangles = tri_mesh.indicies.len() as u32;
+            self.num_indicies = tri_mesh.indicies.len() as u32;
         }
 
 
@@ -153,13 +153,16 @@ impl OpenGLHandler {
             //     0., 0., 0., 0.
             // );
 
-            let mut transform_mat = glm::ext::perspective(60.0, 1.0, 0.1, 0.5);
-            transform_mat = glm::ext::translate(&transform_mat, Vector3::new(t.cos() * 0.3, t.sin() * 0.3, -0.3));
+            let mut transform_mat = glm::ext::perspective(3.1416 / 3., 1.0, 0.1, 10.5);
+            transform_mat = glm::ext::translate(&transform_mat, Vector3::new(0.0, -0.3, -1.5));
+            transform_mat = glm::ext::scale(&transform_mat, Vector3::new(0.1, 0.1, 0.1));
+            transform_mat = glm::ext::rotate(&transform_mat, -3.14 / 2., Vector3::new(1., 0., 0.));
+            transform_mat = glm::ext::rotate(&transform_mat, t, Vector3::new(0., 0., 1.));
 
             set_uniform(self.shader_program, "transformMatrix", UniformType::MAT4(transform_mat));
         
             // Draw the triangle
-            gl::DrawElements(gl::TRIANGLES, self.num_triangles as i32, gl::UNSIGNED_SHORT, std::ptr::null());
+            gl::DrawElements(gl::TRIANGLES, self.num_indicies as i32, gl::UNSIGNED_SHORT, std::ptr::null());
         }
     }
     
