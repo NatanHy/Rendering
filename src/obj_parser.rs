@@ -29,6 +29,25 @@ impl FaceLayout {
         FaceLayout { map }
     }
 
+    pub fn vertex_attrib_layout(&self) -> VertexAttributeLayout {
+        let vec3_size = 3 * std::mem::size_of::<f32>() as i32;
+        let vec2_size = 2 * std::mem::size_of::<f32>() as i32;
+
+        let mut v = Vec::new();
+
+        if self.map.contains_key(&ObjType::VERTEX) {
+            v.push(VertexAttribute::new(0, 3, vec3_size, gl::FLOAT));
+        }
+        if self.map.contains_key(&ObjType::NORMAL) {
+            v.push(VertexAttribute::new(1, 3, vec3_size, gl::FLOAT));
+        }
+        if self.map.contains_key(&ObjType::TEXTURE) {
+            v.push(VertexAttribute::new(2, 2, vec2_size, gl::FLOAT));
+        }
+
+        VertexAttributeLayout::new(v)
+    }
+
     fn update_indicies(&self, verts : &mut Vec<u32>, norms : &mut Vec<u32>, tex : &mut Vec<u32>, indicies : &Vec<u32>) {
         if let Some(indx) = self.map.get(&ObjType::VERTEX) {
             verts.push(indicies[*indx])
@@ -137,24 +156,13 @@ pub fn obj_to_mesh(filename : &str, face_layout : &FaceLayout) -> TriangleMesh {
         &vertex_indicies, &norm_indicies, &tex_indicies
     );
 
-    println!("{:?}", &verticies[0..30]);
-
-    let vec3_size = 3 * std::mem::size_of::<f32>() as i32;
-    let vec2_size = 2 * std::mem::size_of::<f32>() as i32;
-
-    let layout = VertexAttributeLayout::new(
-        vec![
-            VertexAttribute::new(0, 3, vec3_size, gl::FLOAT),
-            // VertexAttribute::new(1, 3, vec3_size, gl::FLOAT),
-            VertexAttribute::new(2, 2, vec2_size, gl::FLOAT)
-        ]
-    );
+    let vertex_attrib_layout = face_layout.vertex_attrib_layout();
 
     TriangleMesh::from_array_indicies(
         verticies,
         vertex_indicies,
         norm_indicies,
         tex_indicies,
-        layout
+        vertex_attrib_layout
     )
 }

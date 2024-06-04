@@ -15,6 +15,6 @@ void main() {
     v = transformMatrix * v;
     gl_Position = v;
     vertexNorm = vec3(1.);
-    texCoord = vec2(textureCoordinate.x, 1. - textureCoordinate.y);
+    texCoord = vec2(textureCoordinate.x, 1. - textureCoordinate.y) * 10.0;
     depth = v.z;
 }

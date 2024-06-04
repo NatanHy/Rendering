@@ -5,6 +5,7 @@ use glutin::event_loop::{EventLoop, ControlFlow};
 use glutin::window::WindowBuilder;
 use glutin::ContextBuilder;
 use glutin::event::{Event, WindowEvent};
+use moving::center_obj_fn;
 use std::time::Instant;
 
 mod set_uniform;
@@ -12,6 +13,7 @@ mod opengl_handler;
 mod triangles;
 mod obj_parser;
 mod texture;
+mod moving;
 
 use obj_parser::{obj_to_mesh, FaceLayout};
 use opengl_handler::{CameraHandler, OpenGLHandler};
@@ -40,19 +42,24 @@ fn main() {
 
     let face_layout = FaceLayout::new(Some(0), Some(1), None);
 
-    let triangles = obj_to_mesh("objects/Scaniverse.obj", &face_layout);
-    let tex_path = Some("textures/Scaniverse.jpg");
+    let obj = "objects/audi.obj";
+    let tex = "textures/limit.png";
+
+    let triangles = obj_to_mesh(obj, &face_layout);
+    let tex_path = Some(tex);
 
     let mut opengl_handler = OpenGLHandler::new();
     opengl_handler.init_shaders();
     opengl_handler.init_buffers(Some(&triangles));
     opengl_handler.init_textures(tex_path);
+
+    let movement_fn = center_obj_fn(obj, -0.4, 0.5, -1.7);
     
     let fov = 3.1415 / 3.;
     let (n, f) = (0.1, 10.);
     
     opengl_handler.camera_handler = CameraHandler::perspective(fov, width as f32 / height as f32, n, f);
-    init_movement(&mut opengl_handler.camera_handler);
+    movement_fn(&mut opengl_handler.camera_handler);
 
     let mut t : f32 = 0.0;
 
@@ -68,7 +75,7 @@ fn main() {
                         gl::Viewport(0, 0, width as i32, height as i32);
 
                         opengl_handler.camera_handler = CameraHandler::perspective(fov, width as f32 / height as f32, n, f);
-                        init_movement(&mut opengl_handler.camera_handler);                    
+                        movement_fn(&mut opengl_handler.camera_handler);                    
                     }
                 }
                 _ => (),
@@ -77,7 +84,7 @@ fn main() {
                 let start = Instant::now();
 
                 opengl_handler.draw();
-                opengl_handler.camera_handler.rotate(-t, [0., 1., 0.]);
+                opengl_handler.camera_handler.rotate(-t * 0.1, [0., 1., 0.]);
                 context.swap_buffers().unwrap();
 
                 let dur = Instant::elapsed(&start);
