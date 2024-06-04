@@ -37,11 +37,43 @@ impl GlBuffer {
     }
 }
 
+pub struct CameraHandler {
+    transform_mat : glm::Matrix4<f32>
+}
+
+impl CameraHandler {
+    pub fn new(fov_rad : f32, aspect : f32, near : f32, far : f32) -> Self {
+        let identity_mat : glm::Matrix4<f32> = glm::mat4(
+            1., 0., 0., 0., 
+            0., 1., 0., 0., 
+            0., 0., 1., 0., 
+            0., 0., 0., 1.);
+
+        let mut transform_mat = glm::ext::perspective(fov_rad, aspect, near, far);
+    
+        CameraHandler { transform_mat }
+    }
+
+    pub fn translate(&mut self, x : f32, y : f32, z : f32) {
+        self.transform_mat = glm::ext::translate(&self.transform_mat, Vector3::new(x, y, z));
+    }
+
+    pub fn scale(&mut self, x : f32,y : f32, z : f32) {
+        self.transform_mat = glm::ext::scale(&self.transform_mat, Vector3::new(x, y, z));
+    }
+
+    pub fn rotate(&mut self, angle : f32, axis : [f32;3]) {
+        self.transform_mat = glm::ext::rotate(&self.transform_mat, angle, Vector3::new(axis[0], axis[1], axis[2]));
+    }
+    
+}
+
 pub struct OpenGLHandler {
     shader_program : u32,
     vbo : Option<GlBuffer>,
     ebo : Option<GlBuffer>,
     num_indicies : u32,
+    pub camera_handler : CameraHandler
 }
 
 impl OpenGLHandler {
@@ -51,6 +83,7 @@ impl OpenGLHandler {
             vbo : None,
             ebo : None,
             num_indicies : 0,
+            camera_handler : CameraHandler::new(3.1415 / 3., 1., 0.1, 10.)
         }
     }
 
@@ -118,29 +151,21 @@ impl OpenGLHandler {
         unsafe {gl::Enable(gl::DEPTH_TEST)};
     }
 
-    pub fn init_textures(&self) {
-        Texture::load("converted/textures/test.png")
+    pub fn init_textures(&self, tex_path : Option<&str>) {
+        if let Some(path) = tex_path {
+            Texture::load(path)
+        } else {
+            Texture::load("textures/missing.jpg")
+        }
     }
 
-    pub fn draw(&self, t : f32) {
+    pub fn draw(&self) {
         unsafe { 
             gl::Clear(gl::COLOR_BUFFER_BIT);
             gl::Clear(gl::DEPTH_BUFFER_BIT);
 
-            let identity_mat = glm::mat4(
-                1., 0., 0., 0., 
-                0., 1., 0., 0., 
-                0., 0., 1., 0., 
-                0., 0., 0., 1.);
-
-            let mut transform_mat = glm::ext::perspective(3.1416 / 3., 1.0, 0.1, 10.5);
-            transform_mat = glm::ext::translate(&transform_mat, Vector3::new(0., -1.0, -4.0));
-            transform_mat = glm::ext::scale(&transform_mat, Vector3::new(1., 1., 1.));
-            // transform_mat = glm::ext::rotate(&transform_mat, -0.2, Vector3::new(1., 0., 0.));
-            transform_mat = glm::ext::rotate(&transform_mat, t, Vector3::new(0., 1., 0.));
-
-            set_uniform(self.shader_program, "transformMatrix", UniformType::MAT4(transform_mat));
             set_uniform(self.shader_program, "texture0", UniformType::INT(0));
+            set_uniform(self.shader_program, "transformMatrix", UniformType::MAT4(self.camera_handler.transform_mat));
         
             gl::DrawElements(gl::TRIANGLES, self.num_indicies as i32, gl::UNSIGNED_SHORT, std::ptr::null());
         }

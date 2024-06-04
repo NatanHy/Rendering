@@ -24,8 +24,8 @@ def convert_tex_coord(coord, img : Image.Image, pos1, pos2):
     delta_i = i1 - i0
     delta_j = j1 - j0
 
-    i_offset = y * delta_i
-    j_offset = x * delta_j
+    i_offset = (y % 1) * delta_i
+    j_offset = (x % 1) * delta_j
 
     new_i = i0 + i_offset
     new_j = j0 + j_offset
@@ -68,38 +68,45 @@ def merge_images(paths : list[str]) -> ImageMapper:
             for j in range(bounds[1]):
                 merged_img_arr[i][j + j_ptr] = img[i][j][0:3]
 
-        j_ptr += j
+        j_ptr += (j + 1)
 
     img = Image.fromarray(merged_img_arr)
     return ImageMapper(img, maps)
 
 def convert_textures(textures_path) -> ImageMapper:
     im_mapper = merge_images([textures_path + "/" + str(p) for p in os.listdir(textures_path)])
-    im_mapper.save("converted/textures/test.png")
+    im_mapper.save("converted/textures/test2.png")
     return im_mapper
 
-# def convert_obj_file(obj_file_path, im_mapper):
-#     tag = ""
-#     tags = set()
+def tag_to_img(tag : str):
+    tag = tag.strip()
+    if "BASE" in tag:
+        return "textures/colors/red.png"
+    return "textures/colors/white.png"
 
-#     filename = obj_file_path.split("/")[-1]
-#     new_file_path = f"converted/objects/{filename}"
-#     shutil.copyfile(obj_file_path, new_file_path)
+def convert_obj_file(obj_file_path, im_mapper):
+    tag = ""
+    tags = set()
 
-#     for line in fileinput.input(new_file_path, inplace=True):
-#         elms = line.split(" ")
-#         if elms[0] != "vt":
-#             print(line, end="")
-#             if elms[0] == "o":
-#                 tag = elms[1]
-#                 tags.add(tag)
-#         else:
-#             tex_coord = [float(elms[1]), float(elms[2])]
-#             tex_coord = im_mapper.translate_tex_coord(tex_coord, tag_to_img(tag))
+    filename = obj_file_path.split("/")[-1]
+    new_file_path = f"converted/objects/{filename}"
+    shutil.copyfile(obj_file_path, new_file_path)
 
-#             print(f"vt {tex_coord[0]} {tex_coord[1]}")
+    for line in fileinput.input(new_file_path, inplace=True):
+        elms = line.split(" ")
+        if elms[0] != "vt":
+            print(line, end="")
+            if elms[0] == "o":
+                tag = elms[1]
+                tags.add(tag)
+        else:
+            tex_coord = [float(elms[1]), float(elms[2])]
+            tex_coord = im_mapper.translate_tex_coord(tex_coord, tag_to_img(tag))
 
-#     print(tags)
+            print(f"vt {tex_coord[0]} {tex_coord[1]}")
 
-im_mapper = convert_textures("textures/car_textures")
+    print(tags)
+
+im_mapper = convert_textures("textures/colors")
+convert_obj_file("objects/audi.obj", im_mapper)
 

@@ -1,5 +1,58 @@
-use std::fs;
+use std::{collections::HashMap, fs};
 use crate::triangles::{TriangleMesh, VertexAttribute, VertexAttributeLayout};
+
+#[derive(Eq, Hash, PartialEq)]
+pub enum ObjType {
+    VERTEX,
+    NORMAL,
+    TEXTURE
+}
+
+pub struct FaceLayout {
+    map : HashMap<ObjType, usize>
+}
+
+impl FaceLayout {
+    pub fn new(vertex : Option<usize>, normal : Option<usize>, texture : Option<usize>) -> Self {
+        let mut map = HashMap::new();
+
+        if let Some(i) = vertex {
+            map.insert(ObjType::VERTEX, i);
+        }
+        if let Some(i) = normal {
+            map.insert(ObjType::NORMAL, i);
+        }
+        if let Some(i) = texture {
+            map.insert(ObjType::TEXTURE, i);
+        }
+
+        FaceLayout { map }
+    }
+
+    fn update_indicies(&self, verts : &mut Vec<u16>, norms : &mut Vec<u16>, tex : &mut Vec<u16>, indicies : &Vec<u16>) {
+        if let Some(indx) = self.map.get(&ObjType::VERTEX) {
+            verts.push(indicies[*indx])
+        }
+        if let Some(indx) = self.map.get(&ObjType::NORMAL) {
+            norms.push(indicies[*indx])
+        }
+        if let Some(indx) = self.map.get(&ObjType::TEXTURE) {
+            tex.push(indicies[*indx])
+        }
+    }
+
+    fn make_verticies(&self, verts : &mut Vec<Vec<f32>>, norms : &mut Vec<Vec<f32>>, tex : &mut Vec<Vec<f32>>) -> Vec<f32> {
+        let mut verticies = Vec::new();
+
+        for i in 0..verts.len() {
+            verticies.extend(verts[i].clone());
+            verticies.extend(norm_index(&norms, i));
+            verticies.extend(tex_index(&tex, i));
+        }
+
+        verticies
+    }
+}
 
 fn add_coordinate(elms : &Vec<&str>, arr : &mut Vec<Vec<f32>>, dim : usize) {
     let v = &elms[1..=dim];
@@ -26,7 +79,7 @@ fn norm_index(norm : &Vec<Vec<f32>>, i : usize) -> Vec<f32> {
     }  
 }
 
-pub fn obj_to_mesh(filename : &str) -> TriangleMesh {
+pub fn obj_to_mesh(filename : &str, face_layout : &FaceLayout) -> TriangleMesh {
 
     let content = fs::read_to_string(filename)
         .expect(&format!("Could not read file: {}", filename));
@@ -71,9 +124,12 @@ pub fn obj_to_mesh(filename : &str) -> TriangleMesh {
                         .collect()
                         ;
 
-                    vertex_indicies.push(indicies[0]);
-                    // norm_indicies.push(indicies[1]);
-                    tex_indicies.push(indicies[1]);
+                    face_layout.update_indicies(
+                        &mut vertex_indicies,
+                        &mut norm_indicies,
+                        &mut tex_indicies,
+                        &indicies
+                    );
                 }
 
             }
@@ -81,13 +137,9 @@ pub fn obj_to_mesh(filename : &str) -> TriangleMesh {
         }
     }
 
-    let mut verticies = Vec::new();
-
-    for i in 0..verts.len() {
-        verticies.extend(verts[i].clone());
-        verticies.extend(norm_index(&norms, i));
-        verticies.extend(tex_index(&tex, i));
-    }
+    let verticies = face_layout.make_verticies(
+        &mut verts, &mut norms, &mut tex
+    );
 
     let vec3_size = 3 * std::mem::size_of::<f32>() as i32;
     let vec2_size = 2 * std::mem::size_of::<f32>() as i32;

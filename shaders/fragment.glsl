@@ -21,5 +21,5 @@ float fog(float depth) {
 
 void main() {
     float lightCoef = (1 + dot(vertexNorm, lightDir)) / 2.;
-    FragColor = texture(texture0, texCoord);
+    FragColor = texture(texture0, texCoord) * fog(depth);
 }
