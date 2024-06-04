@@ -18,14 +18,6 @@ mod moving;
 use obj_parser::{obj_to_mesh, FaceLayout};
 use opengl_handler::{CameraHandler, OpenGLHandler};
 
-fn init_movement(camera_handler : &mut CameraHandler) {
-    // camera_handler.scale(0.1, 0.1, 0.1);
-    camera_handler.translate(0.0, -1.5, -2.5);
-    // camera_handler.rotate(-3.1415 / 2.0, [1., 0., 0.]);
-    // camera_handler.rotate(-3.1415 / 2.0, [0., 0., 1.]);
-
-    // camera_handler.rotate(4.4, [0., 0., 1.]);
-}
 fn main() {
     // Define the size of the viewport (width and height in pixels)
     let mut width = 1000;   
@@ -42,8 +34,8 @@ fn main() {
 
     let face_layout = FaceLayout::new(Some(0), Some(1), None);
 
-    let obj = "objects/audi.obj";
-    let tex = "textures/limit.png";
+    let obj = "objects/Scaniverse.obj";
+    let tex = "textures/Scaniverse.jpg";
 
     let triangles = obj_to_mesh(obj, &face_layout);
     let tex_path = Some(tex);
@@ -53,7 +45,7 @@ fn main() {
     opengl_handler.init_buffers(Some(&triangles));
     opengl_handler.init_textures(tex_path);
 
-    let movement_fn = center_obj_fn(obj, -0.4, 0.5, -1.7);
+    let movement_fn = center_obj_fn(obj, 0., 0.5, -2.2);
     
     let fov = 3.1415 / 3.;
     let (n, f) = (0.1, 10.);
@@ -84,7 +76,7 @@ fn main() {
                 let start = Instant::now();
 
                 opengl_handler.draw();
-                opengl_handler.camera_handler.rotate(-t * 0.1, [0., 1., 0.]);
+                opengl_handler.camera_handler.rotate(-t, [0., 1., 0.]);
                 context.swap_buffers().unwrap();
 
                 let dur = Instant::elapsed(&start);

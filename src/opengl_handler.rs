@@ -167,6 +167,7 @@ impl OpenGLHandler {
         unsafe { 
             gl::Clear(gl::COLOR_BUFFER_BIT);
             gl::Clear(gl::DEPTH_BUFFER_BIT);
+            gl::ClearColor(0.2, 0.3, 0.3, 1.);
 
             set_uniform(self.shader_program, "texture0", UniformType::INT(0));
             set_uniform(self.shader_program, "transformMatrix", UniformType::MAT4(self.camera_handler.transform_mat));
