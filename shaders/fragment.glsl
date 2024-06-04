@@ -2,7 +2,6 @@
 
 const vec3 lightDir = vec3(0.0, 1.0, 1.0);
 
-in vec3 vertexColor;
 in vec3 vertexNorm;
 in vec2 texCoord;
 in float depth;
@@ -21,5 +20,5 @@ float fog(float depth) {
 
 void main() {
     float lightCoef = (1 + dot(vertexNorm, lightDir)) / 2.;
-    FragColor = texture(texture0, texCoord) * fog(depth);
+    FragColor = texture(texture0, texCoord);
 }

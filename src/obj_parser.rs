@@ -13,23 +13,23 @@ pub struct FaceLayout {
 }
 
 impl FaceLayout {
-    pub fn new(vertex : Option<usize>, normal : Option<usize>, texture : Option<usize>) -> Self {
+    pub fn new(vertex : Option<usize>, texture : Option<usize>, normal : Option<usize>) -> Self {
         let mut map = HashMap::new();
 
         if let Some(i) = vertex {
             map.insert(ObjType::VERTEX, i);
         }
-        if let Some(i) = normal {
-            map.insert(ObjType::NORMAL, i);
-        }
         if let Some(i) = texture {
             map.insert(ObjType::TEXTURE, i);
+        }
+        if let Some(i) = normal {
+            map.insert(ObjType::NORMAL, i);
         }
 
         FaceLayout { map }
     }
 
-    fn update_indicies(&self, verts : &mut Vec<u16>, norms : &mut Vec<u16>, tex : &mut Vec<u16>, indicies : &Vec<u16>) {
+    fn update_indicies(&self, verts : &mut Vec<u32>, norms : &mut Vec<u32>, tex : &mut Vec<u32>, indicies : &Vec<u32>) {
         if let Some(indx) = self.map.get(&ObjType::VERTEX) {
             verts.push(indicies[*indx])
         }
@@ -41,13 +41,22 @@ impl FaceLayout {
         }
     }
 
-    fn make_verticies(&self, verts : &mut Vec<Vec<f32>>, norms : &mut Vec<Vec<f32>>, tex : &mut Vec<Vec<f32>>) -> Vec<f32> {
+    fn make_verticies(&self, 
+        verts : &mut Vec<Vec<f32>>, norms : &mut Vec<Vec<f32>>, tex : &mut Vec<Vec<f32>>,
+        vert_indicies : &Vec<u32>, norm_indicies : &Vec<u32>, tex_indicies : &Vec<u32>
+    ) -> Vec<f32> {
         let mut verticies = Vec::new();
 
-        for i in 0..verts.len() {
-            verticies.extend(verts[i].clone());
-            verticies.extend(norm_index(&norms, i));
-            verticies.extend(tex_index(&tex, i));
+        for i in 0..vert_indicies.len() {
+            if self.map.contains_key(&ObjType::VERTEX) {
+                verticies.extend(verts[vert_indicies[i] as usize].clone());
+            }
+            if self.map.contains_key(&ObjType::NORMAL) {
+                verticies.extend(norms[norm_indicies[i] as usize].clone());
+            }
+            if self.map.contains_key(&ObjType::TEXTURE) {
+                verticies.extend(tex[tex_indicies[i] as usize].clone());
+            }
         }
 
         verticies
@@ -63,22 +72,6 @@ fn add_coordinate(elms : &Vec<&str>, arr : &mut Vec<Vec<f32>>, dim : usize) {
     arr.push(v_f32);
 }
 
-fn tex_index(tex : &Vec<Vec<f32>>, i : usize) -> Vec<f32> {
-    if i < tex.len() {
-        return tex[i].clone();
-    } else {
-        return vec![0., 0.]
-    }
-}
-
-fn norm_index(norm : &Vec<Vec<f32>>, i : usize) -> Vec<f32> {
-    if i < norm.len() {
-        return norm[i].clone();
-    } else {
-        return vec![0., 1., 0.]
-    }  
-}
-
 pub fn obj_to_mesh(filename : &str, face_layout : &FaceLayout) -> TriangleMesh {
 
     let content = fs::read_to_string(filename)
@@ -90,9 +83,9 @@ pub fn obj_to_mesh(filename : &str, face_layout : &FaceLayout) -> TriangleMesh {
     let mut norms : Vec<Vec<f32>> = Vec::new();
     let mut tex : Vec<Vec<f32>> = Vec::new();
 
-    let mut vertex_indicies : Vec<u16> = Vec::new();
-    let mut norm_indicies : Vec<u16> = Vec::new();
-    let mut tex_indicies : Vec<u16> = Vec::new();
+    let mut vertex_indicies : Vec<u32> = Vec::new();
+    let mut norm_indicies : Vec<u32> = Vec::new();
+    let mut tex_indicies : Vec<u32> = Vec::new();
 
     for row in rows {
         let elms : Vec<&str> = row.split_whitespace().collect();
@@ -111,18 +104,19 @@ pub fn obj_to_mesh(filename : &str, face_layout : &FaceLayout) -> TriangleMesh {
             }
             "f" => {
                 let face_elms = &elms[1..4];
-
+                
+                // for each (a/b/c)
                 for f in face_elms {
-                    let indicies : Vec<u16> = f
+                    // indicies = [a, b, c]
+                    let indicies : Vec<u32> = f
                         .split("/")
                         .map(|x| 
-                            if let Ok(n) = x.parse::<u16>() {
+                            if let Ok(n) = x.parse::<u32>() {
                                 n - 1
                             } else {
                                 0
                             })
-                        .collect()
-                        ;
+                        .collect();
 
                     face_layout.update_indicies(
                         &mut vertex_indicies,
@@ -132,14 +126,18 @@ pub fn obj_to_mesh(filename : &str, face_layout : &FaceLayout) -> TriangleMesh {
                     );
                 }
 
+
             }
             _ => ()
         }
     }
 
     let verticies = face_layout.make_verticies(
-        &mut verts, &mut norms, &mut tex
+        &mut verts, &mut norms, &mut tex,
+        &vertex_indicies, &norm_indicies, &tex_indicies
     );
+
+    println!("{:?}", &verticies[0..30]);
 
     let vec3_size = 3 * std::mem::size_of::<f32>() as i32;
     let vec2_size = 2 * std::mem::size_of::<f32>() as i32;
@@ -147,7 +145,7 @@ pub fn obj_to_mesh(filename : &str, face_layout : &FaceLayout) -> TriangleMesh {
     let layout = VertexAttributeLayout::new(
         vec![
             VertexAttribute::new(0, 3, vec3_size, gl::FLOAT),
-            VertexAttribute::new(1, 3, vec3_size, gl::FLOAT),
+            // VertexAttribute::new(1, 3, vec3_size, gl::FLOAT),
             VertexAttribute::new(2, 2, vec2_size, gl::FLOAT)
         ]
     );

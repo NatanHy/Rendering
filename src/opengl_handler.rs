@@ -42,13 +42,17 @@ pub struct CameraHandler {
 }
 
 impl CameraHandler {
-    pub fn new(fov_rad : f32, aspect : f32, near : f32, far : f32) -> Self {
+    pub fn new() -> Self {
         let identity_mat : glm::Matrix4<f32> = glm::mat4(
             1., 0., 0., 0., 
             0., 1., 0., 0., 
             0., 0., 1., 0., 
             0., 0., 0., 1.);
 
+        CameraHandler { transform_mat : identity_mat }
+    }
+
+    pub fn perspective(fov_rad : f32, aspect : f32, near : f32, far : f32) -> Self {
         let mut transform_mat = glm::ext::perspective(fov_rad, aspect, near, far);
     
         CameraHandler { transform_mat }
@@ -72,7 +76,7 @@ pub struct OpenGLHandler {
     shader_program : u32,
     vbo : Option<GlBuffer>,
     ebo : Option<GlBuffer>,
-    num_indicies : u32,
+    num_triangles : u32,
     pub camera_handler : CameraHandler
 }
 
@@ -82,8 +86,8 @@ impl OpenGLHandler {
             shader_program : 0,
             vbo : None,
             ebo : None,
-            num_indicies : 0,
-            camera_handler : CameraHandler::new(3.1415 / 3., 1., 0.1, 10.)
+            num_triangles : 0,
+            camera_handler : CameraHandler::new()
         }
     }
 
@@ -142,7 +146,7 @@ impl OpenGLHandler {
             vbo.set_data(&tri_mesh.verticies, gl::STATIC_DRAW);
             ebo.set_data(&tri_mesh.vertex_indicies, gl::STATIC_DRAW);
             tri_mesh.enable_vertex_attributes();
-            self.num_indicies = tri_mesh.vertex_indicies.len() as u32;
+            self.num_triangles = (tri_mesh.verticies.len() / 3) as u32;
         }
 
         self.vbo = Some(vbo);
@@ -167,7 +171,8 @@ impl OpenGLHandler {
             set_uniform(self.shader_program, "texture0", UniformType::INT(0));
             set_uniform(self.shader_program, "transformMatrix", UniformType::MAT4(self.camera_handler.transform_mat));
         
-            gl::DrawElements(gl::TRIANGLES, self.num_indicies as i32, gl::UNSIGNED_SHORT, std::ptr::null());
+            // gl::DrawElements(gl::TRIANGLES, self.num_indicies as i32, gl::UNSIGNED_INT, std::ptr::null());
+            gl::DrawArrays(gl::TRIANGLES, 0, self.num_triangles as i32);
         }
     }
     

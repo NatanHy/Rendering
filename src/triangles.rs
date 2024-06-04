@@ -59,18 +59,18 @@ impl VertexAttributeLayout {
 
 pub struct TriangleMesh {
     pub verticies : Vec<f32>,
-    pub vertex_indicies : Vec<u16>,
-    pub normal_indicies : Vec<u16>,
-    pub texture_indicies : Vec<u16>,
+    pub vertex_indicies : Vec<u32>,
+    pub normal_indicies : Vec<u32>,
+    pub texture_indicies : Vec<u32>,
     pub vertex_attrib_layout : VertexAttributeLayout
 }
 
 impl TriangleMesh {
     pub fn from_array_indicies(
         verticies : Vec<f32>, 
-        vertex_indicies : Vec<u16>,
-        normal_indicies : Vec<u16>,
-        texture_indicies : Vec<u16>,
+        vertex_indicies : Vec<u32>,
+        normal_indicies : Vec<u32>,
+        texture_indicies : Vec<u32>,
         vertex_attrib_layout : VertexAttributeLayout
     ) -> Self {
         TriangleMesh {
@@ -80,40 +80,6 @@ impl TriangleMesh {
             texture_indicies,
             vertex_attrib_layout
         }
-    }
-
-    pub fn full_quad() -> Self {
-        let verticies = vec![
-            -1., -1., -0.5,
-            0., 0.,
-            -1., 1., -0.5,
-            0., 1.,
-            1., 1., -0.5,
-            1., 1.,
-            1., -1., -0.5,
-            1., 0.,
-        ];
-        let vertex_indicies = vec![
-            0, 1, 2, 0, 2, 3
-        ];
-        let normal_indicies = Vec::new();
-        let texture_indicies = vertex_indicies.clone();
-        let vertex_attrib_layout = VertexAttributeLayout::new(
-            vec![
-                VertexAttribute::new(
-                    0, 
-                    3, 
-                    3 * std::mem::size_of::<f32>() as i32,
-                    gl::FLOAT),
-                VertexAttribute::new(
-                    1, 
-                    2, 
-                    2 * std::mem::size_of::<f32>() as i32,
-                    gl::FLOAT),
-            ]
-        );
-
-        TriangleMesh {verticies, vertex_indicies, normal_indicies, texture_indicies, vertex_attrib_layout}
     }
 
     pub fn enable_vertex_attributes(&self) {

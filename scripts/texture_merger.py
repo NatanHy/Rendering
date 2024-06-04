@@ -73,16 +73,17 @@ def merge_images(paths : list[str]) -> ImageMapper:
     img = Image.fromarray(merged_img_arr)
     return ImageMapper(img, maps)
 
-def convert_textures(textures_path) -> ImageMapper:
+def convert_textures(textures_path, output_path) -> ImageMapper:
     im_mapper = merge_images([textures_path + "/" + str(p) for p in os.listdir(textures_path)])
-    im_mapper.save("converted/textures/test2.png")
+    im_mapper.save(output_path)
+    print(im_mapper.maps)
     return im_mapper
 
 def tag_to_img(tag : str):
+    if tag == "":
+        return "textures/missing.jpg"
     tag = tag.strip()
-    if "BASE" in tag:
-        return "textures/colors/red.png"
-    return "textures/colors/white.png"
+    return f"textures/horsie/{tag}.jpg"
 
 def convert_obj_file(obj_file_path, im_mapper):
     tag = ""
@@ -96,17 +97,19 @@ def convert_obj_file(obj_file_path, im_mapper):
         elms = line.split(" ")
         if elms[0] != "vt":
             print(line, end="")
-            if elms[0] == "o":
+            if elms[0] == "usemtl":
                 tag = elms[1]
-                tags.add(tag)
         else:
             tex_coord = [float(elms[1]), float(elms[2])]
-            tex_coord = im_mapper.translate_tex_coord(tex_coord, tag_to_img(tag))
+            try:
+                tex_coord = im_mapper.translate_tex_coord(tex_coord, tag_to_img(tag))
+            except:
+                pass
 
             print(f"vt {tex_coord[0]} {tex_coord[1]}")
 
     print(tags)
 
-im_mapper = convert_textures("textures/colors")
-convert_obj_file("objects/audi.obj", im_mapper)
+im_mapper = convert_textures("textures/horsie")
+convert_obj_file("objects/horse_statue.obj", im_mapper)
 
